@@ -6,6 +6,8 @@
 <!--   java org.apache.axis.utils.Admin client|server undeploy.wsdd -->
 <!--      from the same directory that the Axis engine runs         -->
 
-<undeployment xmlns="http://xml.apache.org/axis/wsdd/">
-  <service name="das_registry"/>
+<undeployment xmlns="http://xml.apache.org/axis/wsdd/"
+	xmlns:das="http://localhost/das_directory"
+	>
+  <service name="das:das_directory"/>
 </undeployment>

@@ -51,7 +51,8 @@ public class Simple_DasRegistry implements DasRegistry {
 	    // Register MySQL driver
 	    Class.forName("com.mysql.jdbc.Driver").newInstance();
 
-	    String url = new String("jdbc:mysql://192.168.5.21:3306/das_registry"); 
+	    //String url = new String("jdbc:mysql://192.168.5.21:3306/das_registry"); 
+	    String url = new String("jdbc:mysql://81.96.73.32:3306/das_registry"); 
 	    
 	    String user = "myuserrw";
 	    String password = "1canwrite";	    
@@ -93,7 +94,6 @@ public class Simple_DasRegistry implements DasRegistry {
     private boolean isInDatabase(String url) {
 	try {
 	    String cmd = "SELECT auto_id from registry where url = '" +url + "'" ;
-	    System.out.println(cmd);
 	    PreparedStatement ps = conn.prepareStatement(cmd);
 	    
 	    ResultSet row = ps.executeQuery();
@@ -119,19 +119,84 @@ public class Simple_DasRegistry implements DasRegistry {
 
 
 
+
+
+    /* see if a coordinate System is already known, if not, store in database 
+       in both cases: 
+       link coordinate system to  new DAS service ...
+     */
+    private void selectInsertCoordinateSystem(String coordsys, int auto_id){
+	
+	try {
+	   
+	    String sql ="SELECT coord_auto from coordinateSystems where coordinateSystem=?";
+	    PreparedStatement ps =  conn.prepareStatement(sql); 
+	    ps.setString(1,coordsys);
+	    ResultSet row = ps.executeQuery();
+
+	    // only one result expected ...
+	    boolean found = row.next() ;
+	    int coord_auto = -1 ;
+	    if ( ! found) {
+		
+		sql = "INSERT INTO coordinateSystems (coordinateSystem) values (?)";
+		ps.close() ;
+		ps = conn.prepareStatement(sql); 
+
+		ps.setString(1,coordsys);
+		
+		ps.executeUpdate();
+		ps.executeUpdate();
+		row = ps.getGeneratedKeys();
+		coord_auto=-1 ;
+		if ( row.next() ) {
+		    coord_auto = row.getInt(1);
+		}
+
+	    }
+
+
+    
+	    if ( found) {
+		coord_auto = row.getInt(1);
+	    } 
+	    
+	    //and now store in registry2coordinateSystem
+	    ps.close() ;
+	    
+	    sql = "INSERT INTO registry2coordinateSystem (auto_id,coord_auto) values (?,?);";
+	    
+	    ps = conn.prepareStatement(sql); 
+
+	    ps.setInt(1,auto_id);
+	    ps.setInt(2,coord_auto);
+	    int r2c_auto = ps.executeUpdate();
+	    
+	    
+
+	} catch (Exception e) {
+	    e.printStackTrace();
+	}
+
+    }
+
+
+
+
+
     /* store  DAS service in database
      */
     private void storeInDatabase(
 			 String url,
 			 String adminemail,
 			 String description,
-			 String coordinateSystem,
+			 String[] coordinateSystem,
 			 String[] capabilities
 			 ) {
 	
 	try {
-	    String sql    = "INSERT INTO registry (url,adminemail,description,coordinateSystem" ;
-	    String endsql = ") values (?,?,?,?" ;
+	    String sql    = "INSERT INTO registry (url,adminemail,description" ;
+	    String endsql = ") values (?,?,?" ;
 	    for ( int i=0; i< capabilities.length;i++) {
 		// potential security problem ??
 		sql    += ","+capabilities[i];
@@ -144,9 +209,28 @@ public class Simple_DasRegistry implements DasRegistry {
 	    ps.setString(1,url);
 	    ps.setString(2,adminemail);
 	    ps.setString(3,description);	    
-	    ps.setString(4,coordinateSystem);
 
-	    ps.execute();
+	    ps.executeUpdate();
+	    ResultSet rs = ps.getGeneratedKeys();
+	    int auto_id = -1 ;
+	    if (rs.next()) {
+		auto_id= rs.getInt(1);
+	    }
+	    //System.out.println("register new server with auto_id "+auto_id);
+
+
+
+	    for( int i=0; i<coordinateSystem.length;i++){
+
+		String cs = coordinateSystem[i];
+		selectInsertCoordinateSystem(cs,auto_id);
+		    
+	    }
+
+
+
+	    
+
 	} catch (Exception e) {
 	    e.printStackTrace() ;
 	}
@@ -199,6 +283,9 @@ public class Simple_DasRegistry implements DasRegistry {
 	
     }
 
+
+    
+
     /* returns the capabilities of service auto_id */
     private String[] get_capabilities(int auto_id){
 	try {
@@ -244,7 +331,7 @@ public class Simple_DasRegistry implements DasRegistry {
 
 
     /* returns the number of available sources in registry */
-
+    
     private int getNumberSources(){
 	try {
 	     PreparedStatement ps = 
@@ -260,7 +347,47 @@ public class Simple_DasRegistry implements DasRegistry {
 	return 0 ;
     }
 
+    /* retrieve all coordinate systems that are provided by service
+       auto_id
+    */
+    private String[] getCoordinateSystems(int auto_id){
 
+	try {
+	    String sql = "select count(distinct(coordinateSystem)) from registry2coordinateSystem,coordinateSystems where registry2coordinateSystem.auto_id = ? and coordinateSystems.coord_auto = registry2coordinateSystem.coord_auto" ;
+	    
+	    PreparedStatement ps = 
+		conn.prepareStatement( sql );
+	    ps.setInt(1,auto_id);
+
+	    ResultSet row =	ps.executeQuery() ;
+	    row.next();
+	    int size = row.getInt(1);
+	    
+
+
+	    String[] retarr = new String[size] ;
+	
+	    sql = "select coordinateSystem from registry2coordinateSystem,coordinateSystems where registry2coordinateSystem.auto_id = ? and coordinateSystems.coord_auto = registry2coordinateSystem.coord_auto" ; 
+	
+	    ps.close();
+	    ps = conn.prepareStatement(sql) ; 
+	    ps.setInt(1,auto_id);
+
+	    row =	ps.executeQuery() ;
+	    
+	    int i = -1 ;
+	    while (row.next()) { 
+		i++ ;
+		retarr[i] = row.getString(1);
+		System.out.println(retarr[i]);
+	    }
+	
+	    return retarr;
+	}catch (Exception e) {
+	    e.printStackTrace() ;
+	}
+	return null;
+    }
 
 
 
@@ -271,7 +398,7 @@ public class Simple_DasRegistry implements DasRegistry {
 				   String url,
 				   String adminemail,
 				   String description,
-				   String coordinateSystem,
+				   String[] coordinateSystem,
 				   String[] capabilities
 				   ) {
 
@@ -283,6 +410,8 @@ public class Simple_DasRegistry implements DasRegistry {
 	 * 4 - database error -  could not add server to database
 	 * 5 - unknown capability
 	 */
+	
+	System.out.println("in RegisterService");
 
 	boolean works = false ;
 	// check if new DAS service is valid
@@ -333,7 +462,7 @@ public class Simple_DasRegistry implements DasRegistry {
      * @see DasRegistry#listServices()
      */
 
-    public String[][] listServices() {
+    public DasSource[] listServices() {
 	// TODO Auto-generated method stub
 
 	//ArrayList ret = new ArrayList() ;
@@ -341,11 +470,11 @@ public class Simple_DasRegistry implements DasRegistry {
 	try {
 	   
 	    int size = getNumberSources();
-	    String[][] sources = new String[size][];
-	    //DasSource[] sources = new DasSource[size];
+	    //String[][] sources = new String[size][];
+	    DasSource[] sources = new DasSource[size];
 
 	    PreparedStatement ps = 
-		conn.prepareStatement( "SELECT auto_id,url,adminemail,description,coordinateSystem from registry");
+		conn.prepareStatement( "SELECT auto_id,url,adminemail,description from registry");
 	    ResultSet row =	ps.executeQuery() ;
 	
 	    //ArrayList sources = new ArrayList();
@@ -356,56 +485,47 @@ public class Simple_DasRegistry implements DasRegistry {
 		String url              = row.getString(2) ;
 		String adminemail       = row.getString(3) ;
 		String description      = row.getString(4) ;
-		String coordinateSystem = row.getString(5) ;
+		
 		System.out.println("get capabilities for "+auto_id);
 		String[] capabilities = get_capabilities(auto_id);
 		System.out.println("done!");
 		int number_caps;
 		if (capabilities != null) {
-		    System.out.println("capabilities.length: "+capabilities.length);
 		    number_caps = capabilities.length ;
 		} else {
 		    number_caps = 0 ;
 		}
-		/*
+
+		String[] coordinateSystems = getCoordinateSystems(auto_id) ;
+
+
+		
 		DasSource ds = new DasSource() ;
 		ds.setUrl(url);
 		ds.setAdminemail(adminemail);
 		ds.setDescription(description);
-		ds.setCoordinateSystem(coordinateSystem);
+		ds.setCoordinateSystem(coordinateSystems);
 		ds.setCapabilities(capabilities);
-		System.out.println(ds);
-		*/
+		//System.out.println(ds);
+		sources[i] = ds ;
 		
+		/*
 		sources[i] = new String[4+number_caps] ;
 		sources[i][0] = url ;
 		sources[i][1] = adminemail ;
 		sources[i][2] = description ;
-		sources[i][3] = coordinateSystem ;
+		sources[i][3] = "" ;
 		//sources[i][3] = capabilities ;
 		for(int j=0; j<number_caps;j++){
-		    System.out.println("adding capabilities:"+capabilities[j]);
 		    sources[i][4+j] = capabilities[j];
 		}
 		//System.out.println("sources["+i+"]:"+url+", "+adminemail+", "+description);
-		/*
-		HashMap m = new HashMap();
-		m.put("dasurl",url);
-		m.put("adminemail",adminemail);
-		m.put("description",description);
-		
-		sources.add(m);
 		*/
-		/*ArrayList tmparr = new ArrayList() ;
-
-		tmparr.add(url);
-		tmparr.add(adminemail);
-		tmparr.add(description);
-		sources.add(tmparr) ;
-		*/
+	
 	
 	    }
 	    
+	    //System.out.println("returning"+sources[0] );
 	    return sources ;
 	    //DasSourceList dl = new DasSourceList() ;
 	    //dl.setSources(sources);
@@ -419,4 +539,15 @@ public class Simple_DasRegistry implements DasRegistry {
 	}
 	return null;
     }
+
+    /* returns all  capabilites that are known to the registry service */
+    public String[] getAllCapabilities(){
+	String[] retstr = new String[all_capabilities.size()] ;
+	for (int i=0; i < all_capabilities.size(); i++){
+	    retstr[i] = (String)all_capabilities.get(i) ;
+
+	}
+	return retstr;
+    }
+
 }

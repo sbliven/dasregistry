@@ -23,7 +23,7 @@
  */
 
 
-package org.biojava.das.registry ;
+package org.biojava.services.das.registry ;
 
 /* a simple class to be returned via SOAP
  */
@@ -32,24 +32,31 @@ public class DasSource {
     String url ;
     String adminemail ;
     String description ;
-    String coordinateSystem ;
+    String[] coordinateSystem ;
     String[] capabilities ;
 
     public DasSource () {
-	url         = "";
-	adminemail  = "" ;
-	description = "" ;
-	coordinateSystem="";
-	capabilities = null ;
+	url              = "";
+	adminemail       = "" ;
+	description      = "" ;
+	coordinateSystem = null;
+	capabilities     = null ;
     }
     
     public String toString() {
-	String str = "<source>\n\t<uri>"+url+"</uri>\n\t<description>"+description+"</description>\n\t<contact>"+adminemail+"</contact>\n\t<coordinateSystem>"+coordinateSystem+"</coordinateSystem>\n";
-	str +="\t<services>\n" ;
-	for (int i=0;i<capabilities.length;i++){
-	    str+="\t\t<service>http://www.biodas.org/das1/"+capabilities[i]+"</service>\n" ;
+	
+	String str = "<source>\n\t<uri>"+url+"</uri>\n\t<description>"+description+"</description>\n\t<contact>"+adminemail+"</contact>\n" ;
+	    
+	for (int i=0;i<coordinateSystem.length;i++){
+
+	    str+="\t<coordinateSystem>"+coordinateSystem[i]+"</coordinateSystem>\n" ;
 	}
-	str +="\t</services>\n</source>\n";
+	   
+
+	for (int i=0;i<capabilities.length;i++){
+	    str+="\t<service>http://www.biodas.org/das1/"+capabilities[i]+"</service>\n" ;
+	}
+	str +="</source>\n";
 	return str;
 
     }
@@ -67,7 +74,7 @@ public class DasSource {
 	description = "";
     }
     
-    public void setCoordinateSystem (String u){
+    public void setCoordinateSystem (String[] u){
 	coordinateSystem=u ;
     }
 
@@ -80,5 +87,6 @@ public class DasSource {
     public String getAdminemail(){return adminemail;}
     public String getDescription(){return description;}
     public String[] getCapabilities(){return capabilities;}
+    public String[] getCoordinateSystem(){return coordinateSystem;}
 
 }

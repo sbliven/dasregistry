@@ -24,18 +24,16 @@
   <tr><td class="h2bg"><img src="/gfx/blank.gif" height="8" alt="" /></td></tr>
 </table>
 
+ 
 
-<p>
 
-registering service ...
 
-<% 
-
+<%
 	int status = register.registerMe();
 	if (status == 1) { 
-		out.println("o.k.!");
+		out.println("registering service ... o.k.!");
 	} else if (status == 0) {
-		out.println("unknown error occured.");
+		out.println("registering service ... unknown error occured.");
 	} else if (status == 2) {
 		out.println("server already in database, not registering a second time.");
 	} else if (status == 3) {
@@ -43,6 +41,7 @@ registering service ...
 	} else if (status == 4) {
 		out.println("database error -  could not add server to database");
 	}
+
 
 %>
 

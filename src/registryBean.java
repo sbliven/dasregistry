@@ -41,27 +41,77 @@ import org.apache.axis.encoding.TypeMappingRegistryImpl;
 import org.apache.axis.encoding.ser.BeanSerializer;
 import org.apache.axis.encoding.ser.ArraySerializer;
 
-import javax.xml.rpc.Call;
+import org.apache.axis.encoding.ser.BeanSerializerFactory;
+import org.apache.axis.encoding.ser.BeanDeserializerFactory ;
+//import javax.xml.rpc.Call;
+import org.apache.axis.client.Call ;
+
+
 import javax.xml.namespace.QName ;
 
 import  org.biojava.services.das.registry.* ;
 
 public class registryBean {
- 
-    String dasurl;
-    String adminemail;
-    String description;
-    String coordinateSystem;
+
+    int numbcoordinateentries ; 
+    String dasurl      ;
+    String adminemail  ;
+    String description ;
+    String[] coordinateSystem;
     String[] capabilities ;
 
 
-    public void setCoordinateSystem(String s) {
+    public registryBean() {
+	coordinateSystem = new String[0];
+	capabilities     = new String[0];
+    }
+
+    private String getRegistryEndpoint(){
+	String s = "http://127.0.0.1:8080/axis/services/das_registry" ;
+	return s;
+    }
+    
+    private URL getRegistryUrl() {
+	String u = getRegistryEndpoint();
+	try {
+	    URL url =new URL (u);
+	    return url;
+	} catch (Exception e) {
+	    e.printStackTrace();
+	}
+	return null;
+    }
+
+
+    public void setNumbcoordinateentries(int i) {
+	if ( i <1) { i = 1;}
+
+	numbcoordinateentries = i ;
+    }
+
+    public int getNumbcoordinateentries() {
+	if (numbcoordinateentries==0) {
+	    numbcoordinateentries=1 ;
+	}
+	return numbcoordinateentries ;
+    }
+
+
+    public void setCoordinateSystem(String[] s) {
+	//System.out.println("set coordinate System");
 	coordinateSystem = s ;	
     }
     
-    public String getCoordinateSystem(){
+    public String[] getCoordinateSystem(){
+	//System.out.println("gett coordinate System");
 	return coordinateSystem ;
     }
+
+    public String getCoordinateSystem(int position){
+	return coordinateSystem[position] ;
+    }
+
+
     public void setCapabilities (String[] s) {
 	capabilities = s ;	
     }
@@ -85,84 +135,103 @@ public class registryBean {
         description = value;
     }
 
-    public String getDasurl() { return dasurl; }
+    public String getDasurl() { 
+	return dasurl; 
+    }
 
     public String getAdminemail() { return adminemail; }
 
     public String getDescription() { return description; }
 
 
-    /* list available DAS services */
-    public String[][] listServices() {
+    public boolean hasAlignmentCapability() {
+	boolean hasalignmentcap = false ;
+	for (int i=0; i<capabilities.length;i++) {
+	    System.out.println("capa:"+capabilities[i]);
+	    if ( capabilities[i].equals("alignment") ) {
+		hasalignmentcap = true ;
+		break ;
+	    }
+	}
+	return hasalignmentcap ;
+    }
+
+
+    
+    /* contact to DAS registry server and retrieve all possible capabilities */
+    public String[] getAllCapabilities() {
+	try{
+	    Service  service = new Service();
+	    Call     call    = (Call) service.createCall();
 	
-	System.out.println("registryBean: listing services");
+	    URL url = getRegistryUrl(); 
+	    String u = getRegistryEndpoint();
+	    call.setTargetEndpointAddress(u);
+	    call.setOperationName(new QName("das:das_directory", "getAllCapabilities") );
+	    call.setReturnType(XMLType.SOAP_ARRAY);
+	
+	    System.out.println("registryBean: call.invoke "+url);
+	
+	
+	    String[] all_capabilities = (String[]) call.invoke(new Object [] {});
+	
+	    return all_capabilities;
+	} catch(Exception e) {
+	    e.printStackTrace();
+	    System.out.println("an exception occured...");
+	    
+	}  
+	return null;
+    }
+
+
+
+    /* list available DAS services */
+    public DasSource[] listServices() {
+	
+	//System.out.println("registryBean: listing services");
 
 	try{
 
 	    Service  service = new Service();
-            Call     call    = (Call) service.createCall();
+            Call     call    = (Call) service.createCall();	    
 
-	    String u = "http://127.0.0.1:8080/axis/services/das_registry" ;
+	    QName qn = new QName( "http://localhost/das_directory", "dassource" );
 
-	    URL url = new URL (u);
+	    // register serialization 
 
+	    call.registerTypeMapping(DasSource.class,  
+				     qn, 
+				     new BeanSerializerFactory(DasSource.class, qn), 
+				     new BeanDeserializerFactory(DasSource.class, qn)
+				     ); 
+
+
+	    URL url = getRegistryUrl();
+	    String u = getRegistryEndpoint();
 	    call.setTargetEndpointAddress(u);
-	    call.setOperationName(new QName("das_registry", "listServices") );
+	    call.setOperationName(new QName("das:das_directory", "listServices") );
 	    call.setReturnType(XMLType.SOAP_ARRAY);
 
-	    System.out.println("registryBean: call.invoke "+url);
-
-
-	    String[][] sources = (String[][]) call.invoke(new Object [] {});
-	    System.out.println("done!");
-
-	    System.out.println(sources);
-	    
 	    /*
-	    int i=0;
-	    for (i=0;i<=sources.length -1; i++) {
+	    QName qn = new QName( "urn:BeanService", "Order" );
 
-		int j=0 ;
-		for (j=0;j<=2; j++){		    
-		    System.out.println("i,j"+i+", "+j+": "+sources[i][j]);		    
-		} 
-	    } 
+	    call.registerTypeMapping(
+				     Order.class, qn,
+				     new org.apache.axis.encoding.ser.BeanSerializerFactory(Order.class, qn), 
+				     new org.apache.axis.encoding.ser.BeanDeserializerFactory(Order.class, qn)); 
+	    
 	    */
+	    
+
+    
+
+
+	    //String[][] sources = (String[][]) call.invoke(new Object [] {});
+	    DasSource[] sources = (DasSource[]) call.invoke(new Object [] {});
+	    	    
+	   
 	    return sources;
-	    /* 
-	    // Check the response.
-	    if( !resp.generatedFault() ) {
-		Parameter ret = resp.getReturnValue();
-		Object value = ret.getValue();            
-		System.out.println(value);
-	    } else {
-		Fault fault = resp.getFault();            
-		System.err.println("Generated fault: ");
-		System.out.println ("  Fault Code   = " + fault.getFaultCode());  
-		System.out.println ("  Fault String = " + fault.getFaultString());
-	    }
-	    */
-	    
- 
-	    // Check the response.
-	    /*
-	    if ( resp.generatedFault() ) {
- 
-		Fault fault = resp.getFault ();
-		System.out.println("The call failed: ");
-		System.out.println("Fault Code   = " + fault.getFaultCode());
-		System.out.println("Fault String = " + fault.getFaultString());
-
-	    }
-	    else {
- 
-		Parameter result = resp.getReturnValue();
-		arr = (ArrayList)result.getValue() ;
-		System.out.println("list result"+arr);	       
-		
-		return arr ;
-	    }
-	    */
 	    
 
 	} catch(Exception e) {
@@ -179,14 +248,14 @@ public class registryBean {
 
 	try{
 	    
-	    //URL url = new URL ("http://localhost:8080/soap/servlet/rpcrouter");
-
 	    Service  service = new Service();
             Call     call    = (Call) service.createCall();
-	    String u = "http://127.0.0.1:8080/axis/services/das_registry" ;
-	    URL url = new URL (u);
+	    
+	    URL url = getRegistryUrl();
+	    String u = getRegistryEndpoint();
+	    System.out.println("registerMe");
 	    call.setTargetEndpointAddress(u);
-	    call.setOperationName(new QName("das_registry", "registerService") );
+	    call.setOperationName(new QName("das:das_directory", "registerService") );
 	    call.addParameter("url", 
                     org.apache.axis.Constants.XSD_STRING,
                     javax.xml.rpc.ParameterMode.IN);
@@ -197,18 +266,21 @@ public class registryBean {
                     org.apache.axis.Constants.XSD_STRING,
 		  javax.xml.rpc.ParameterMode.IN);
 	    call.addParameter("coordinateSystem", 
-                    org.apache.axis.Constants.XSD_STRING,
+                    XMLType.SOAP_ARRAY,
 		  javax.xml.rpc.ParameterMode.IN);
 	    call.addParameter("capabilities", 
                     XMLType.SOAP_ARRAY,
 		  javax.xml.rpc.ParameterMode.IN);
 	    call.setReturnType(org.apache.axis.Constants.XSD_INT);
 
+	    if (coordinateSystem==null){
+		System.out.println("coordSystem = null!");
+	    }
 	   
-	    //System.out.println("invoke!");
+	    System.out.println("invoke! coordSystem len:"+coordinateSystem.length);
 	    //Response resp = (org.apache.soap.rpc.Response) call.invoke(new Object[] {dasurl,adminemail,description} );
 	    Integer registry_status = (Integer) call.invoke(new Object[] {dasurl,adminemail,description,coordinateSystem,capabilities} );
-	    //System.out.println("returned");
+	    System.out.println("returned");
 	    
 	    int status = registry_status.intValue();
 	    //System.out.println("resulting value "+registry_status);

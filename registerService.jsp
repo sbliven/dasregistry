@@ -1,9 +1,24 @@
+<jsp:useBean id="register" class="dasregistry.registryBean" scope="session"/>
+<jsp:setProperty name="register" property="numbcoordinateentries"/>
+
 <HTML>
 <HEAD>
  <title>DAS registration server</title>
 <link rel="stylesheet" type="text/css" href="http://www.sanger.ac.uk/stylesheets/stylesheet.css" />
 
 </HEAD>
+
+<script language="Javascript">
+<!--
+	function reloadPage() {
+		document.count_form.submit();
+		return false;
+	}
+// -->
+</script> 
+
+
+
 
 <BODY>
 <!-- the sanger default header -->
@@ -41,48 +56,110 @@
     <td><img src="/icons/blank.gif" width="10" height="10" alt="" /></td>
     <td>
 
-<form method="post" action="registerAction.jsp">
+<!--
+<form action="registerService.jsp"  name="count_form" method="post">
+<input type=hidden name="" value="">
+1. Select the number of coordinateSystems (usually one, can be multiple if an alignment service)
+currently <%=register.getNumbcoordinateentries()%>
+	<input type="hidden" name="" value="">
+	
+	<input type="submit" value="change">
+</form>
+-->
 
-	<table border="0">
-	<tr><td>DAS url     </td><td>  <input type="input" name="dasurl" size="20" value="http://"> </td></tr>
-	<tr><td valign="top">coordinate system </td><td> <textarea COLS="20" ROWS="4" WRAP="hard" NAME="coordinateSystem"></textarea></td></tr>
-	<tr><td>admin email </td><td> <input type="input" name="adminemail" size="20"></td></tr>
-	<tr><td valign="top">description </td><td> <textarea COLS="20" ROWS="4" WRAP="hard" NAME="description"></textarea></td></tr>
+<table border="0">
+
+	<form method="post" action="registerService.jsp" name="count_form">
+	<tr><td valign="top">
+	Number of coordinate systems supported by service
+	</td>
+	<td>
+	<select name="numbcoordinateentries" onChange="reloadPage()">
+		<% 
+			int numentries = register.getNumbcoordinateentries(); 
+			for( int i=1;i<=10;i++){
+				%>
+				<option <% if (i==numentries){out.print("selected");}%>
+				value="<%=i%>"><%=i%></option>
+				<%
+			}
+			%>
+	</select>
+	 
+	<input type="submit" value="change...">
+	</td></tr>
+	</form>
+
+
+
+<form method="post" action="registerAction.jsp" name="register_form">
+	<% 
+	
+	for (int j=0; j<numentries;j++) {
+		%>
+		<tr><td valign="top">coordinate system <%=j+1%>:</td>  
+		<td><input type="input" name="coordinateSystem" value=""> 
+		</td></tr>
+		
+		<%		
+	}
+	%>
+	
+	<tr><td valign="top">DAS url     </td>
+	<td><input type="input" name="dasurl" size="20" value="<%
+	
+				String dasurl = register.getDasurl();
+				if (dasurl == null) { 
+					out.print("http://");
+				} else {
+					out.print(dasurl);
+				}
+
+								%>"> </td></tr>
+	<tr><td valign="top">admin email </td>
+	<td> <input type="input" name="adminemail" size="20" value="<%
+
+				String adminemail = register.getAdminemail();
+				if (adminemail!=null) { out.print(adminemail);};
+
+
+								%>"></td></tr>
+	
+
+	<tr><td valign="top">description </td>
+	<td> <textarea COLS="20" ROWS="4" WRAP="hard" NAME="description" value="<%=register.getDescription()%>"></textarea></td></tr>
 
 
 	<tr><td valign="top">DAS capabilities</td> 
 
-	<td> 
-		 <SELECT NAME="capabilities" size="7" multiple>
-		 <OPTION VALUE="sequence"       >sequence</OPTION>
-		 <OPTION VALUE="structure"      >structure</OPTION>
-		 <OPTION VALUE="alignment"      >alignment</OPTION>
-		 <OPTION VALUE="types"          >types</OPTION>
-		 <OPTION VALUE="features"       >features</OPTION>
-		 <OPTION VALUE="entry_points"   >entry_points</OPTION>
-		 <OPTION VALUE="feature_by_id"  >feature_by_id</OPTION>		 
-		 <OPTION VALUE="group_by_id"    >group_by_id</OPTION>
-		 <OPTION VALUE="component"      >component</OPTION>
-		 <OPTION VALUE="supercomponent" >supercomponent</OPTION>
- 		 <OPTION VALUE="dna"            >dna</OPTION>
-		 <OPTION VALUE="stylesheet"     >stylesheet</OPTION>
-		 <OPTION VALUE="error_segment"  >error_segment</OPTION>
-		 <OPTION VALUE="unknown_segment">unknown_segment</OPTION>
-		 <OPTION VALUE="unknown_feature">unknown_features</OPTION>
+	<td>    <SELECT NAME="capabilities" size="7" multiple>
+
+		<% 
+		  String all_capabilities[] = register.getAllCapabilities();
+		  for (int i=0;i<all_capabilities.length;i++){
+		  out.println("<OPTION VALUE=\""+all_capabilities[i]+"\">"+all_capabilities[i]+"</OPTION>");
+		  }	
+		  %>
+		
 		 </SELECT>
 
 
 
 	</td>
 	</tr>
-	</table>
 
+	</table>
+        
+	<input type="hidden" name="numbcoordinateentries" value="2">
+	<input type="submit" value="register" >
+
+	
 
 	
  
 
 	
-	<input type="submit">
+
 </form>
 
 

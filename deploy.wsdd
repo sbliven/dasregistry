@@ -7,14 +7,19 @@
 
 <deployment
     xmlns="http://xml.apache.org/axis/wsdd/"
-    xmlns:java="http://xml.apache.org/axis/wsdd/providers/java">
-
-  <service name="das_registry" provider="java:RPC">
+    xmlns:java="http://xml.apache.org/axis/wsdd/providers/java"
+    xmlns:das="http://localhost/das_directory">
+  <service name="das:das_directory" provider="java:RPC">
       <parameter name="className" value="org.biojava.services.das.registry.Simple_DasRegistry"/>
-      <parameter name="allowedMethods" value="listServices registerService"/>      
+      <parameter name="allowedMethods" value="listServices registerService getAllCapabilities"/>      
+      
+      <beanMapping languageSpecificType="java:org.biojava.services.das.registry.DasSource"
+       qname="das:dassource"		
+	/>
   </service>
-  <beanMapping qName="ns:org.biojava.service.das.regirsty.DasSource"	
-	languageSpecificType="java:org.biojava.das.registry.DasSource"/>
+ 
+
 </deployment>
 
 
+<!-- <operation name="listServices" returnQName="das:das_directory" returnType="DasService" >      </operation> -->

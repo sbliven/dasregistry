@@ -5,7 +5,7 @@
 
 <HTML>
 <HEAD>
- <title>DAS registration server</title>
+ <title>available DAS services</title>
 <link rel="stylesheet" type="text/css" href="http://www.sanger.ac.uk/stylesheets/stylesheet.css" />
 
 </HEAD>
@@ -51,7 +51,9 @@
 
   
     <% 
-	    String[][]s = register.listServices() ;
+	    //String[][]s = register.listServices() ;
+	    DasSource[] s = register.listServices() ;
+	    
 	    %>
     <table border="0" >
     <tr>
@@ -62,33 +64,38 @@
     <td><b>capabilities</b></td>
     </tr>
     <%
+  
 	    int i=0;
 	    for (i=0;i<=s.length -1; i++) {
 	    	%>
 	    	<tr>
 	    	<%
 		
-		for (int j=0;j<=3; j++){		    
-			%>
-			<td>
-			<%
-		    	out.println(s[i][j]);		    
-			%>
-			</td>
-			<%
-			} 
+
+		DasSource ds = s[i];
 		%>
-		</td>
-		<td>
+		
+		 <td><%= ds.getUrl()       %></td>
+		 <td><%= ds.getAdminemail()   %></td>
+		 <td><%= ds.getDescription()  %></td>
+
+		 <td><% String[] coordSys = ds.getCoordinateSystem();
+		      for (int j=0;j<coordSys.length;j++){
+		      out.println(coordSys[j]);
+		      }
+
+		 %></td>
+		 <td><% String[] capabs = ds.getCapabilities();
+		      for (int j=0;j<capabs.length;j++){
+		      out.println(capabs[j]);
+		      }
+
+		 %></td>
 		<%
-		for (int j=4;j<s[i].length; j++){
-			out.println(s[i][j]);
-		}
-		%>
-		</td>
-		<%
+		 
 	    } 
-	    
+
+   
     %> 
     </table>
    

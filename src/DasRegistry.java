@@ -45,16 +45,17 @@ public interface DasRegistry {
     public int registerService(String url, 
 			       String adminemail, 
 			       String description, 
-			       String coordinateSystem,
+			       String[] coordinateSystem,
 			       String[] capabilities) ;
 
     /* 
      * return list of available DAS sources 
      * 
      */
-    public String[][] listServices();
+    public DasSource[] listServices();
 		
 
-    
+    /* retrieve all possible Capabilities of DAS services */
+    public String[] getAllCapabilities();
     
 }
