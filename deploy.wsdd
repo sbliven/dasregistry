@@ -1,0 +1,20 @@
+<!-- Two ways to deploy this file:                                   -->
+<!--   java org.apache.axis.client.AdminClient deploy.wsdd          -->
+<!--      after the axis server is running                          -->
+<!-- or                                                             -->
+<!--   java org.apache.axis.utils.Admin client|server deploy.wsdd   -->
+<!--      from the same directory that the Axis engine runs         -->
+
+<deployment
+    xmlns="http://xml.apache.org/axis/wsdd/"
+    xmlns:java="http://xml.apache.org/axis/wsdd/providers/java">
+
+  <service name="das_registry" provider="java:RPC">
+      <parameter name="className" value="org.biojava.services.das.registry.Simple_DasRegistry"/>
+      <parameter name="allowedMethods" value="listServices registerService"/>      
+  </service>
+  <beanMapping qName="ns:org.biojava.service.das.regirsty.DasSource"	
+	languageSpecificType="java:org.biojava.das.registry.DasSource"/>
+</deployment>
+
+
